@@ -149,6 +149,7 @@ func directMessage() {
         msg := js
         buf := []byte(msg)
         for {
+            log.Info(myIP.String() + " trying to send message to: " + BroadcastAddr)
             _,err = Conn.Write(buf)
             CheckError(err)
             time.Sleep(time.Duration(r1.Intn(20)) * time.Second)
