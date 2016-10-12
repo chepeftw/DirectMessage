@@ -86,7 +86,7 @@ func attendBufferChannel() {
 
             log.Info(myIP.String() + " -> Message: " + packet.Message + " from " + packet.Source.String())
 
-            if packet.Source.String() != myIP {
+            if packet.Source.String() != myIP.String() {
                 go replyMessage( packet.Source.String() )
             }
         } else {
