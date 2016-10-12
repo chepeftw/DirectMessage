@@ -86,7 +86,9 @@ func attendBufferChannel() {
 
             log.Info(myIP.String() + " -> Message: " + packet.Message + " from " + packet.Source.String())
 
-            go replyMessage( packet.Source.String() )
+            if packet.Source.String() != myIP {
+                go replyMessage( packet.Source.String() )
+            }
         } else {
             fmt.Println("closing channel")
             done <- true
