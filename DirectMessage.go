@@ -190,7 +190,7 @@ func main() {
     }
 
     // It gives one minute time for the network to get configured before it gets its own IP.
-    time.Sleep(time.Second * 60)
+    time.Sleep(time.Second * 30)
     myIP = SelfIP();
 
     // Lets prepare a address at any address at port 10001
