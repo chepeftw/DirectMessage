@@ -232,7 +232,7 @@ func parseRoutes() {
             fmt.Fprintln(os.Stderr, "reading standard input:", err)
         }
 
-        time.Sleep(time.Second * 5)
+        time.Sleep(time.Second * 1)
     }
 }
 
