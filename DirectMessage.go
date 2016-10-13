@@ -200,7 +200,6 @@ func beacon() {
 }
 
 func parseRoutes() {
-    fmt.Println("Starting parseRoutes()")
     for {
         out, err := exec.Command("route", "-n").Output()
         CheckError(err)
