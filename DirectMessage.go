@@ -111,6 +111,37 @@ func attendBufferChannel() {
     }
 }
 
+// Function that handles the router channel
+func attendRouterChannel() {
+    for {
+        j, more := <-router
+        if more {
+            // s := strings.Split(j, "|")
+            // _, jsonStr := s[0], s[1]
+
+            // First we take the json, unmarshal it to an object
+            packet := Packet{}
+            json.Unmarshal([]byte(j), &packet)
+
+            log.Info(myIP.String() + " -> Message: " + packet.Message + " from " + packet.Source.String())
+
+            if packet.Type == 50 {
+                if myIP.String() == packet.Gateway.String() {
+                    if myIP.String() == packet.Destination.String() {
+                        log.Info(myIP.String() + " SUCCESS ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
+                    } else {
+                        
+                    }
+                }
+            }
+        } else {
+            fmt.Println("closing channel")
+            done <- true
+            return
+        }
+    }
+}
+
 func beacon() {
     ServerAddr,err := net.ResolveUDPAddr(Protocol, BroadcastAddr+Port)
     CheckError(err)
@@ -149,8 +180,10 @@ func beacon() {
 func parseRoutes() {
     fmt.Println("Starting parseRoutes()")
     for {
+        fmt.Println("getting routes")
         out, err := exec.Command("route", "-n").Output()
         CheckError(err)
+        fmt.Println("got routes")
 
         scanner := bufio.NewScanner(strings.NewReader(string(out[:])))
 
@@ -214,11 +247,13 @@ func main() {
     // ++++++++ END Logger conf
     // +++++++++++++++++++++++++++++
 
-    log.Info("Starting UPD Beacon")
+    log.Info("Waiting for UPD Beacon")
 
     // It gives one minute time for the network to get configured before it gets its own IP.
     time.Sleep(time.Second * 60)
     myIP = SelfIP();
+
+    log.Info("Starting UPD Beacon")
 
     // Lets prepare a address at any address at port 10001
     ServerAddr,err := net.ResolveUDPAddr(Protocol, Port)
@@ -229,8 +264,11 @@ func main() {
     CheckError(err)
     defer ServerConn.Close()
 
+    fmt.Printf("go attendBufferChannel()")
     go attendBufferChannel()
+    fmt.Printf("go beacon()")
     go beacon()
+    fmt.Printf("go parseRoutes()")
     go parseRoutes()
  
     buf := make([]byte, 1024)
