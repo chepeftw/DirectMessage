@@ -5,6 +5,7 @@ import (
     "fmt"
     "net"
     "time"
+    "regexp"
     "strconv"
     "math/rand"
     "encoding/json"
@@ -27,13 +28,13 @@ var format = logging.MustStringFormatter(
 const (
     Port              = ":10001"
     Protocol          = "udp"
-    // BroadcastAddr     = "255.255.255.255"
+    BroadcastAddr     = "255.255.255.255"
 )
-
-var BroadcastAddr = "255.255.255.255"
 
 // +++++++++ Global vars
 var myIP net.IP = net.ParseIP("127.0.0.1")
+
+var routes map[string]string = make(map[string]string)
 
 // +++++++++ Channels
 var buffer = make(chan string)
@@ -41,8 +42,10 @@ var done = make(chan bool)
 
 // +++++++++ Packet structure
 type Packet struct {
+    Type         int        `json:"type,omitempty"`
     Message      string     `json:"message"`
-    Source       net.IP     `json:"source"`
+    Source       net.IP     `json:"source,omitempty"`
+    Destination  net.IP     `json:"destination,omitempty"`
 }
 
  
@@ -85,10 +88,6 @@ func attendBufferChannel() {
             json.Unmarshal([]byte(j), &packet)
 
             log.Info(myIP.String() + " -> Message: " + packet.Message + " from " + packet.Source.String())
-
-            if packet.Source.String() != myIP.String() {
-                go replyMessage( packet.Source.String() )
-            }
         } else {
             fmt.Println("closing channel")
             done <- true
@@ -97,32 +96,7 @@ func attendBufferChannel() {
     }
 }
 
-func replyMessage(dest string) {
-    ServerAddr,err := net.ResolveUDPAddr(Protocol, dest+Port)
-    CheckError(err)
-    LocalAddr, err := net.ResolveUDPAddr(Protocol, myIP.String()+":0")
-    CheckError(err)
-    Conn, err := net.DialUDP(Protocol, LocalAddr, ServerAddr)
-    CheckError(err)
-    defer Conn.Close()
-
-    payload := Packet{
-        Message: "REPLY network! ",
-        Source: myIP,
-    }
-
-    js, err := json.Marshal(payload)
-    CheckError(err)
-
-    if Conn != nil {
-        msg := js
-        buf := []byte(msg)
-        _,err = Conn.Write(buf)
-        CheckError(err)
-    }
-}
-
-func directMessage() {
+func beacon() {
     ServerAddr,err := net.ResolveUDPAddr(Protocol, BroadcastAddr+Port)
     CheckError(err)
     LocalAddr, err := net.ResolveUDPAddr(Protocol, myIP.String()+":0")
@@ -136,7 +110,7 @@ func directMessage() {
     t := strconv.Itoa(r1.Intn(100000))
 
     payload := Packet{
-        Message: "HELLO network! "+t,
+        Message: "Hello network! "+t,
         Source: myIP,
     }
 
@@ -149,16 +123,49 @@ func directMessage() {
         msg := js
         buf := []byte(msg)
         for {
-            log.Info(myIP.String() + " trying to send message to: " + BroadcastAddr)
             _,err = Conn.Write(buf)
             CheckError(err)
             time.Sleep(time.Duration(r1.Intn(20)) * time.Second)
         }
     }
 }
+
+func parseRoutes() {
+    for {
+        out, err := exec.Command("route" "-n").Output()
+        CheckError(err)
+
+        scanner := bufio.NewScanner(strings.NewReader(out))
+
+        for scanner.Scan() {
+            s := scanner.Text()
+            fmt.Println(s) // Println will add back the final '\n'
+
+            re_leadclose_whtsp := regexp.MustCompile(`^[\s\p{Zs}]+|[\s\p{Zs}]+$`)
+            re_inside_whtsp := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
+            final := re_leadclose_whtsp.ReplaceAllString(input, "")
+            final = re_inside_whtsp.ReplaceAllString(final, " ")
+
+            arr := strings.Split(final, " ")
+            fmt.Println(arr[0], arr[1])
+
+            routes[arr[0]] = arr[1]
+        }
+
+        if err := scanner.Err(); err != nil {
+            fmt.Fprintln(os.Stderr, "reading standard input:", err)
+        }
+
+        for key, value := range routes {
+            fmt.Println("Key:", key, "Value:", value)
+        }
+
+        time.Sleep(time.Second * 5)
+    }
+}
  
 func main() {
-    fmt.Printf("Hello World!\n")
+    fmt.Printf("Hello World!")
 
     // +++++++++++++++++++++++++++++
     // ++++++++ Logger conf
@@ -183,14 +190,10 @@ func main() {
     // ++++++++ END Logger conf
     // +++++++++++++++++++++++++++++
 
-    log.Info("Starting UPD Direct Message")
-
-    if len(os.Args) > 0 {
-        BroadcastAddr = os.Args[1]
-    }
+    log.Info("Starting UPD Beacon")
 
     // It gives one minute time for the network to get configured before it gets its own IP.
-    time.Sleep(time.Second * 30)
+    time.Sleep(time.Second * 60)
     myIP = SelfIP();
 
     // Lets prepare a address at any address at port 10001
@@ -203,7 +206,8 @@ func main() {
     defer ServerConn.Close()
 
     go attendBufferChannel()
-    go directMessage()
+    go beacon()
+    go parseRoutes()
  
     buf := make([]byte, 1024)
  
