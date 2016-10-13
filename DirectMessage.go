@@ -41,6 +41,7 @@ var routes map[string]string = make(map[string]string)
 
 // +++++++++ Channels
 var buffer = make(chan string)
+var router = make(chan string)
 var done = make(chan bool)
 
 // +++++++++ Packet structure
@@ -49,6 +50,7 @@ type Packet struct {
     Message      string     `json:"message"`
     Source       net.IP     `json:"source,omitempty"`
     Destination  net.IP     `json:"destination,omitempty"`
+    Gateway      net.IP     `json:"gateway,omitempty"`
 }
 
  
@@ -91,6 +93,16 @@ func attendBufferChannel() {
             json.Unmarshal([]byte(j), &packet)
 
             log.Info(myIP.String() + " -> Message: " + packet.Message + " from " + packet.Source.String())
+
+            if packet.Type == 50 {
+                if myIP.String() == packet.Gateway.String() {
+                    if myIP.String() == packet.Destination.String() {
+                        log.Info(myIP.String() + " SUCCESS ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
+                    } else {
+                        
+                    }
+                }
+            }
         } else {
             fmt.Println("closing channel")
             done <- true
@@ -113,6 +125,7 @@ func beacon() {
     t := strconv.Itoa(r1.Intn(100000))
 
     payload := Packet{
+        Type: 0,
         Message: "Hello network! "+t,
         Source: myIP,
     }
@@ -134,6 +147,7 @@ func beacon() {
 }
 
 func parseRoutes() {
+    fmt.Println("Starting parseRoutes()")
     for {
         out, err := exec.Command("route", "-n").Output()
         CheckError(err)
