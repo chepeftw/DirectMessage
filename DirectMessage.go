@@ -129,7 +129,7 @@ func attendRouterChannel() {
 
                 payload := Packet{
                     Type: 50,
-                    Message: packet.Message,
+                    Message: packet.Message + myIP.String() + " ",
                     Source: packet.Source,
                     Destination: packet.Destination,
                     Gateway: net.ParseIP(routes[packet.Destination.String()]),
@@ -236,13 +236,12 @@ func parseRoutes() {
 }
 
 func sendAwesomeMessage() {
-    for {
-        time.Sleep(time.Second * 16)
-
-        if "10.12.0.1" == myIP.String() {
+    if "10.12.0.1" == myIP.String() {
+        for {
+            time.Sleep(time.Second * 16)
             payload := Packet{
                 Type: 50,
-                Message: "ROUTING IN DA HOUSE!",
+                Message: "ROUTING! ",
                 Source: myIP,
                 Destination: net.ParseIP("10.12.0.25"),
                 Gateway: myIP,
