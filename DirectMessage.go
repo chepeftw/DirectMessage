@@ -6,7 +6,6 @@ import (
     "net"
     "time"
     "bufio"
-    "bytes"
     "regexp"
     "strconv"
     "strings"
