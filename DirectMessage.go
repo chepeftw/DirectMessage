@@ -5,8 +5,12 @@ import (
     "fmt"
     "net"
     "time"
+    "bufio"
+    "bytes"
     "regexp"
     "strconv"
+    "strings"
+    "os/exec"
     "math/rand"
     "encoding/json"
 
@@ -132,10 +136,11 @@ func beacon() {
 
 func parseRoutes() {
     for {
-        out, err := exec.Command("route" "-n").Output()
+        out, err := exec.Command("route", "-n").Output()
         CheckError(err)
 
-        scanner := bufio.NewScanner(strings.NewReader(out))
+        n := bytes.Index(out, []byte{0})
+        scanner := bufio.NewScanner(strings.NewReader(string(out[:n])))
 
         for scanner.Scan() {
             s := scanner.Text()
@@ -143,7 +148,7 @@ func parseRoutes() {
 
             re_leadclose_whtsp := regexp.MustCompile(`^[\s\p{Zs}]+|[\s\p{Zs}]+$`)
             re_inside_whtsp := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
-            final := re_leadclose_whtsp.ReplaceAllString(input, "")
+            final := re_leadclose_whtsp.ReplaceAllString(s, "")
             final = re_inside_whtsp.ReplaceAllString(final, " ")
 
             arr := strings.Split(final, " ")
