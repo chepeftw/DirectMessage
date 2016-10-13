@@ -112,35 +112,26 @@ func attendBufferChannel() {
 }
 
 // Function that handles the router channel
-func attendRouterChannel() {
-    for {
-        j, more := <-router
-        if more {
-            // s := strings.Split(j, "|")
-            // _, jsonStr := s[0], s[1]
+// func attendRouterChannel() {
+//     for {
+//         j, more := <-router
+//         if more {
+//             s := strings.Split(j, "|")
+//             _, jsonStr := s[0], s[1]
 
-            // First we take the json, unmarshal it to an object
-            packet := Packet{}
-            json.Unmarshal([]byte(j), &packet)
+//             if s[0] == "ADD" {
+//                 s_0 := strings.Split(j, "|")
+//             } else if s[0] == "ROUTE" {
+                
+//             }
 
-            log.Info(myIP.String() + " -> Message: " + packet.Message + " from " + packet.Source.String())
-
-            if packet.Type == 50 {
-                if myIP.String() == packet.Gateway.String() {
-                    if myIP.String() == packet.Destination.String() {
-                        log.Info(myIP.String() + " SUCCESS ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
-                    } else {
-                        
-                    }
-                }
-            }
-        } else {
-            fmt.Println("closing channel")
-            done <- true
-            return
-        }
-    }
-}
+//         } else {
+//             fmt.Println("closing channel")
+//             done <- true
+//             return
+//         }
+//     }
+// }
 
 func beacon() {
     ServerAddr,err := net.ResolveUDPAddr(Protocol, BroadcastAddr+Port)
@@ -190,9 +181,8 @@ func parseRoutes() {
         i := 0
         for scanner.Scan() {
             if i < 2 {
-                continue
-            } else {
                 i++
+                continue
             }
 
             s := scanner.Text()
