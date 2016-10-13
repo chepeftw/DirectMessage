@@ -139,8 +139,7 @@ func parseRoutes() {
         out, err := exec.Command("route", "-n").Output()
         CheckError(err)
 
-        n := bytes.Index(out, []byte{0})
-        scanner := bufio.NewScanner(strings.NewReader(string(out[:n])))
+        scanner := bufio.NewScanner(strings.NewReader(string(out[:])))
 
         for scanner.Scan() {
             s := scanner.Text()
