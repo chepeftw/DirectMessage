@@ -236,22 +236,24 @@ func parseRoutes() {
 }
 
 func sendAwesomeMessage() {
-    time.Sleep(time.Second * 10)
+    for {
+        time.Sleep(time.Second * 16)
 
-    if "10.12.0.1" == myIP.String() {
-        payload := Packet{
-            Type: 50,
-            Message: "ROUTING IN DA HOUSE!",
-            Source: myIP,
-            Destination: net.ParseIP("10.12.0.25"),
-            Gateway: myIP,
+        if "10.12.0.1" == myIP.String() {
+            payload := Packet{
+                Type: 50,
+                Message: "ROUTING IN DA HOUSE!",
+                Source: myIP,
+                Destination: net.ParseIP("10.12.0.25"),
+                Gateway: myIP,
+            }
+
+            js, err := json.Marshal(payload)
+            CheckError(err)
+
+            // output <- js
+            buffer <- string(js)
         }
-
-        js, err := json.Marshal(payload)
-        CheckError(err)
-
-        // output <- js
-        buffer <- string(js)
     }
 }
  
@@ -284,7 +286,7 @@ func main() {
     log.Info("Waiting for UPD Beacon")
 
     // It gives one minute time for the network to get configured before it gets its own IP.
-    time.Sleep(time.Second * 60)
+    time.Sleep(time.Second * 30)
     myIP = SelfIP();
 
     log.Info("Starting UPD Beacon")
