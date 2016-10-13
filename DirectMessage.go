@@ -223,7 +223,7 @@ func parseRoutes() {
             final = re_inside_whtsp.ReplaceAllString(final, " ")
 
             arr := strings.Split(final, " ")
-            fmt.Println("Destination: %s - Gateway: %s", arr[0], arr[1])
+            // fmt.Println("Destination: %s - Gateway: %s", arr[0], arr[1])
 
             router <- "ADD|" + arr[0] + " " + arr[1]
         }
@@ -307,8 +307,6 @@ func main() {
     go parseRoutes()
     go sendAwesomeMessage()
 
-
- 
     buf := make([]byte, 1024)
  
     for {
