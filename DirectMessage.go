@@ -303,6 +303,7 @@ func main() {
     go attendOutputChannel()
     go beacon()
     go parseRoutes()
+    go sendAwesomeMessage()
 
 
  
