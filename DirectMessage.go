@@ -140,9 +140,15 @@ func parseRoutes() {
 
         scanner := bufio.NewScanner(strings.NewReader(string(out[:])))
 
+        i := 0
         for scanner.Scan() {
+            if i < 2 {
+                continue
+            } else {
+                i++
+            }
+
             s := scanner.Text()
-            fmt.Println(s) // Println will add back the final '\n'
 
             re_leadclose_whtsp := regexp.MustCompile(`^[\s\p{Zs}]+|[\s\p{Zs}]+$`)
             re_inside_whtsp := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
@@ -150,8 +156,6 @@ func parseRoutes() {
             final = re_inside_whtsp.ReplaceAllString(final, " ")
 
             arr := strings.Split(final, " ")
-            fmt.Println(arr[0], arr[1])
-
             routes[arr[0]] = arr[1]
         }
 
