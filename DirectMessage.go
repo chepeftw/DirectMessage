@@ -42,6 +42,7 @@ var routes map[string]string = make(map[string]string)
 // +++++++++ Channels
 var buffer = make(chan string)
 var router = make(chan string)
+var output = make(chan string)
 var done = make(chan bool)
 
 // +++++++++ Packet structure
@@ -92,14 +93,14 @@ func attendBufferChannel() {
             packet := Packet{}
             json.Unmarshal([]byte(j), &packet)
 
-            log.Info(myIP.String() + " -> Message: " + packet.Message + " from " + packet.Source.String())
+            log.Info(myIP.String() + " -> Message: " + packet.Message + " From " + packet.Source.String())
 
             if packet.Type == 50 {
                 if myIP.String() == packet.Gateway.String() {
                     if myIP.String() == packet.Destination.String() {
                         log.Info(myIP.String() + " SUCCESS ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
                     } else {
-                        
+                        router <- "ROUTE|" + j
                     }
                 }
             }
@@ -112,28 +113,44 @@ func attendBufferChannel() {
 }
 
 // Function that handles the router channel
-// func attendRouterChannel() {
-//     for {
-//         j, more := <-router
-//         if more {
-//             s := strings.Split(j, "|")
-//             _, jsonStr := s[0], s[1]
+func attendRouterChannel() {
+    for {
+        j, more := <-router
+        if more {
+            s := strings.Split(j, "|")
+            opType, predicate := s[0], s[1]
 
-//             if s[0] == "ADD" {
-//                 s_0 := strings.Split(j, "|")
-//             } else if s[0] == "ROUTE" {
-                
-//             }
+            if opType == "ADD" {
+                arr := strings.Split(predicate, " ")
+                routes[arr[0]] = arr[1]
+            } else if opType == "ROUTE" {
+                packet := Packet{}
+                json.Unmarshal([]byte(predicate), &packet)
 
-//         } else {
-//             fmt.Println("closing channel")
-//             done <- true
-//             return
-//         }
-//     }
-// }
+                payload := Packet{
+                    Type: 50,
+                    Message: packet.Message,
+                    Source: packet.Source,
+                    Destination: packet.Destination,
+                    Gateway: net.ParseIP(routes[packet.Destination.String()]),
+                }
 
-func beacon() {
+                js, err := json.Marshal(payload)
+                CheckError(err)
+
+                output <- string(js)
+            }
+
+        } else {
+            fmt.Println("closing channel")
+            done <- true
+            return
+        }
+    }
+}
+
+// Function that handles the output channel
+func attendOutputChannel() {
     ServerAddr,err := net.ResolveUDPAddr(Protocol, BroadcastAddr+Port)
     CheckError(err)
     LocalAddr, err := net.ResolveUDPAddr(Protocol, myIP.String()+":0")
@@ -142,6 +159,23 @@ func beacon() {
     CheckError(err)
     defer Conn.Close()
 
+    for {
+        j, more := <-output
+        if more {
+            if Conn != nil {
+                buf := []byte(j)
+                _,err = Conn.Write(buf)
+                CheckError(err)
+            }
+        } else {
+            fmt.Println("closing channel")
+            done <- true
+            return
+        }
+    }
+}
+
+func beacon() {
     s1 := rand.NewSource(time.Now().UnixNano())
     r1 := rand.New(s1)
     t := strconv.Itoa(r1.Intn(100000))
@@ -152,29 +186,23 @@ func beacon() {
         Source: myIP,
     }
 
-    js, err := json.Marshal(payload)
+    jsByte, err := json.Marshal(payload)
     CheckError(err)
+    js := string(jsByte)
 
     log.Info("Our random message is "+t)
 
-    if Conn != nil {
-        msg := js
-        buf := []byte(msg)
-        for {
-            _,err = Conn.Write(buf)
-            CheckError(err)
-            time.Sleep(time.Duration(r1.Intn(20)) * time.Second)
-        }
+    for {
+        output <- js
+        time.Sleep(time.Duration(5 + r1.Intn(18)) * time.Second)
     }
 }
 
 func parseRoutes() {
     fmt.Println("Starting parseRoutes()")
     for {
-        fmt.Println("getting routes")
         out, err := exec.Command("route", "-n").Output()
         CheckError(err)
-        fmt.Println("got routes")
 
         scanner := bufio.NewScanner(strings.NewReader(string(out[:])))
 
@@ -186,7 +214,7 @@ func parseRoutes() {
             }
 
             s := scanner.Text()
-            fmt.Println(s) // Println will add back the final '\n'
+            // fmt.Println(s) // Println will add back the final '\n'
 
             re_leadclose_whtsp := regexp.MustCompile(`^[\s\p{Zs}]+|[\s\p{Zs}]+$`)
             re_inside_whtsp := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
@@ -194,20 +222,36 @@ func parseRoutes() {
             final = re_inside_whtsp.ReplaceAllString(final, " ")
 
             arr := strings.Split(final, " ")
-            fmt.Println(arr[0], arr[1])
+            fmt.Println("Destination: %s - Gateway: %s", arr[0], arr[1])
 
-            routes[arr[0]] = arr[1]
+            router <- "ADD|" + arr[0] + " " + arr[1]
         }
 
         if err := scanner.Err(); err != nil {
             fmt.Fprintln(os.Stderr, "reading standard input:", err)
         }
 
-        for key, value := range routes {
-            fmt.Println("Key:", key, "Value:", value)
+        time.Sleep(time.Second * 5)
+    }
+}
+
+func sendAwesomeMessage() {
+    time.Sleep(time.Second * 10)
+
+    if "10.12.0.1" == myIP.String() {
+        payload := Packet{
+            Type: 50,
+            Message: "ROUTING IN DA HOUSE!",
+            Source: myIP,
+            Destination: net.ParseIP("10.12.0.25"),
+            Gateway: myIP,
         }
 
-        time.Sleep(time.Second * 5)
+        js, err := json.Marshal(payload)
+        CheckError(err)
+
+        // output <- js
+        buffer <- string(js)
     }
 }
  
@@ -254,12 +298,13 @@ func main() {
     CheckError(err)
     defer ServerConn.Close()
 
-    fmt.Printf("go attendBufferChannel()")
     go attendBufferChannel()
-    fmt.Printf("go beacon()")
+    go attendRouterChannel()
+    go attendOutputChannel()
     go beacon()
-    fmt.Printf("go parseRoutes()")
     go parseRoutes()
+
+
  
     buf := make([]byte, 1024)
  
