@@ -190,10 +190,10 @@ func attendRouterChannel() {
                 if len(HelloReplyList) >= 2 {
                     s1 := rand.NewSource(time.Now().UnixNano())
                     r1 := rand.New(s1)
-                    
+
                     gossipCandidate := HelloReplyList[1]
                     if r1.Intn(100000)%2 == 0 {
-                        gossipCandidate := HelloReplyList[0]
+                        gossipCandidate = HelloReplyList[0]
                     }
 
                     SendRoute(gossipCandidate, RouterWaitRoom[0])
