@@ -130,7 +130,7 @@ func attendBufferChannel() {
             } else if packet.Type == ROUTE {
                 if myIP.String() == packet.Gateway.String() {
                     if myIP.String() == packet.Destination.String() {
-                        i++
+                        i = i + 1
                         log.Info(myIP.String() + " SUCCESS ROUTE -> Timestamp: " + packet.Timestamp + " Message: " + packet.Message + " from " + packet.Source.String() + " => " + string(i))                        
                     } else {
                         log.Info(myIP.String() + " ++++++++++++++++ ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
@@ -325,7 +325,7 @@ func sendAwesomeMessage() {
         for {
             log.Info("Waiting to SEND Awesome message to 10.12.0.1")
             time.Sleep(time.Second * 10)
-            i++
+            i = i + 1
             log.Info("Sending Awesome message to 10.12.0.1")
             payload := Packet{
                 Type: ROUTE,
