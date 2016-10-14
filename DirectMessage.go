@@ -318,7 +318,7 @@ func parseRoutes() {
 
 func sendAwesomeMessage() {
     if "10.12.0.25" == myIP.String() {
-        // for {
+        for {
             log.Info("Waiting to SEND Awesome message to 10.12.0.1")
             time.Sleep(time.Second * 25)
             log.Info("Sending Awesome message to 10.12.0.1")
@@ -338,7 +338,7 @@ func sendAwesomeMessage() {
 
             // output <- js
             buffer <- string(js)
-        // }
+        }
     }
 }
  
