@@ -131,6 +131,7 @@ func attendBufferChannel() {
 }
 
 func SendHello() {
+    log.Info("Sending Hello")
     s1 := rand.NewSource(time.Now().UnixNano())
     r1 := rand.New(s1)
     globalTimestamp = r1.Intn(100000)
@@ -201,6 +202,7 @@ func attendRouterChannel() {
                     HelloReplyList = []net.IP{}
                 }
             } else if opType == "ROUTE" {
+                log.Info("Attending router ROUTE")
                 packet := Packet{}
                 json.Unmarshal([]byte(predicate), &packet)
                 RouterWaitRoom = append(RouterWaitRoom, packet)
@@ -304,9 +306,10 @@ func parseRoutes() {
 func sendAwesomeMessage() {
     if "10.12.0.1" == myIP.String() {
         for {
+            log.Info("Sending Awesome message to 10.12.0.25")
             time.Sleep(time.Second * 16)
             payload := Packet{
-                Type: 50,
+                Type: ROUTE,
                 Message: "ROUTING! ",
                 Source: myIP,
                 Destination: net.ParseIP("10.12.0.25"),
