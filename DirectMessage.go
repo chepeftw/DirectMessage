@@ -46,8 +46,8 @@ var myIP net.IP = net.ParseIP("127.0.0.1")
 
 var routes map[string]string = make(map[string]string)
 var globalTimestamp = 0
-var HelloReplyList []net.IP = []net.IP{}
 var RouterWaitRoom []Packet = []Packet{}
+var ForwardedMessages []string = []string{}
 
 // +++++++++ Channels
 var buffer = make(chan string)
@@ -62,7 +62,7 @@ type Packet struct {
     Source       net.IP     `json:"source,omitempty"`
     Destination  net.IP     `json:"destination,omitempty"`
     Gateway      net.IP     `json:"gateway,omitempty"`
-    Timestamp    int        `json:"timestamp,omitempty"`
+    Timestamp    string     `json:"timestamp,omitempty"`
 }
 
  
@@ -92,6 +92,15 @@ func SelfIP() net.IP {
     return net.ParseIP("127.0.0.1")
 }
 
+func contains(s []string, e string) bool {
+    for _, a := range s {
+        if a == e {
+            return true
+        }
+    }
+    return false
+}
+
 // Function that handles the buffer channel
 func attendBufferChannel() {
     for {
@@ -103,12 +112,14 @@ func attendBufferChannel() {
 
             if packet.Type == HELLO {
                 if myIP.String() != packet.Source.String() {
-                    SendHelloReply(packet)
+                    if !contains(ForwardedMessages, packet.Timestamp) {
+                        SendHelloReply(packet)
+                    }
                 }
             } else if packet.Type == HELLO_REPLY {
                 if myIP.String() == packet.Destination.String() {
                     log.Info(myIP.String() + " HEELO_REPLY from " + packet.Source.String())                        
-                    router <- "ADD|" + packet.Source.String()
+                    router <- "ADD|" + packet.Timestamp + " " + packet.Source.String()
                 }
             } else if packet.Type == ROUTE {
                 if myIP.String() == packet.Gateway.String() {
@@ -130,16 +141,13 @@ func attendBufferChannel() {
     }
 }
 
-func SendHello() {
+func SendHello(packet Packet) {
     log.Info("Sending Hello")
-    s1 := rand.NewSource(time.Now().UnixNano())
-    r1 := rand.New(s1)
-    globalTimestamp = r1.Intn(100000)
 
     payload := Packet{
         Type: HELLO,
         Source: myIP,
-        Timestamp: globalTimestamp,
+        Timestamp: packet.Timestamp,
     }
 
     js, err := json.Marshal(payload)
@@ -169,6 +177,7 @@ func SendRoute(gateway net.IP, packet Packet) {
         Source: packet.Source,
         Destination: packet.Destination,
         Gateway: gateway,
+        Timestamp: packet.Timestamp,
     }
 
     js, err := json.Marshal(payload)
@@ -186,27 +195,27 @@ func attendRouterChannel() {
             opType, predicate := s[0], s[1]
 
             if opType == "ADD" {
-                HelloReplyList = append(HelloReplyList, net.ParseIP(predicate))
+                s1 := strings.Split(predicate, " ")
+                stamp, dest := s1[0], s1[1]
 
-                if len(HelloReplyList) >= 2 {
-                    s1 := rand.NewSource(time.Now().UnixNano())
-                    r1 := rand.New(s1)
+                relaySelection := net.ParseIP(dest)
 
-                    gossipCandidate := HelloReplyList[1]
-                    if r1.Intn(100000)%2 == 0 {
-                        gossipCandidate = HelloReplyList[0]
+                if len(RouterWaitRoom) > 0 {
+                    if RouterWaitRoom[0].Timestamp == stamp {
+                        SendRoute(relaySelection, RouterWaitRoom[0])
+                        ForwardedMessages = append(ForwardedMessages, stamp)
+                        if len(ForwardedMessages) > 100 {
+                            ForwardedMessages = ForwardedMessages[len(ForwardedMessages)-100:]
+                        }
+                        RouterWaitRoom = RouterWaitRoom[1:]
                     }
-
-                    SendRoute(gossipCandidate, RouterWaitRoom[0])
-                    RouterWaitRoom = RouterWaitRoom[1:]
-                    HelloReplyList = []net.IP{}
                 }
             } else if opType == "ROUTE" {
                 log.Info("Attending router ROUTE")
                 packet := Packet{}
                 json.Unmarshal([]byte(predicate), &packet)
                 RouterWaitRoom = append(RouterWaitRoom, packet)
-                SendHello()
+                SendHello(packet)
             }
 
         } else {
@@ -314,6 +323,7 @@ func sendAwesomeMessage() {
                 Source: myIP,
                 Destination: net.ParseIP("10.12.0.25"),
                 Gateway: myIP,
+                Timestamp: strings.Replace(myIP.String(), ".", "", -1) + "_" + string(time.Now().UnixNano()),
             }
 
             js, err := json.Marshal(payload)
