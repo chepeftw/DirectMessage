@@ -106,6 +106,7 @@ func contains(s []string, e string) bool {
 func attendBufferChannel() {
     s1 := rand.NewSource(time.Now().UnixNano())
     r1 := rand.New(s1)
+    i := 0
 
     for {
         j, more := <-buffer
@@ -129,7 +130,8 @@ func attendBufferChannel() {
             } else if packet.Type == ROUTE {
                 if myIP.String() == packet.Gateway.String() {
                     if myIP.String() == packet.Destination.String() {
-                        log.Info(myIP.String() + " SUCCESS ROUTE -> Timestamp: " + packet.Timestamp + " Message: " + packet.Message + " from " + packet.Source.String())                        
+                        i++
+                        log.Info(myIP.String() + " SUCCESS ROUTE -> Timestamp: " + packet.Timestamp + " Message: " + packet.Message + " from " + packet.Source.String() + " => " + string(i))                        
                     } else {
                         log.Info(myIP.String() + " ++++++++++++++++ ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
                         router <- "ROUTE|" + j
@@ -319,9 +321,11 @@ func parseRoutes() {
 
 func sendAwesomeMessage() {
     if "10.12.0.25" == myIP.String() {
+        i := 0
         for {
             log.Info("Waiting to SEND Awesome message to 10.12.0.1")
-            time.Sleep(time.Second * 25)
+            time.Sleep(time.Second * 10)
+            i++
             log.Info("Sending Awesome message to 10.12.0.1")
             payload := Packet{
                 Type: ROUTE,
@@ -332,7 +336,7 @@ func sendAwesomeMessage() {
                 Timestamp: strings.Replace(myIP.String(), ".", "", -1) + "_" + strconv.FormatInt(time.Now().UTC().UnixNano(), 10),
             }
 
-            log.Info("Payload.Timestamp: " + payload.Timestamp)
+            log.Info("Payload.Timestamp: " + payload.Timestamp + " => " + string(i))
 
             js, err := json.Marshal(payload)
             CheckError(err)
