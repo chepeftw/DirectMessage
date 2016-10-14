@@ -46,7 +46,8 @@ var myIP net.IP = net.ParseIP("127.0.0.1")
 
 var routes map[string]string = make(map[string]string)
 var globalTimestamp = 0
-var RouterWaitRoom []Packet = []Packet{}
+// var RouterWaitRoom []Packet = []Packet{}
+var RouterWaitRoom map[string]Packet = make(map[string]Packet)
 var ForwardedMessages []string = []string{}
 
 // +++++++++ Channels
@@ -116,7 +117,7 @@ func attendBufferChannel() {
             if packet.Type == HELLO {
                 if myIP.String() != packet.Source.String() {
                     if contains(ForwardedMessages, packet.Timestamp) {
-                        time.Sleep(time.Duration(500 + r1.Intn(500)) * time.Millisecond)   
+                        time.Sleep(time.Duration(r1.Intn(750)) * time.Millisecond)   
                     }
                     SendHelloReply(packet)
                 }
@@ -205,20 +206,20 @@ func attendRouterChannel() {
                 relaySelection := net.ParseIP(dest)
 
                 if len(RouterWaitRoom) > 0 {
-                    if RouterWaitRoom[0].Timestamp == stamp {
-                        SendRoute(relaySelection, RouterWaitRoom[0])
+                    if _, ok := RouterWaitRoom[stamp]; ok {
+                        SendRoute(relaySelection, RouterWaitRoom[stamp])
                         ForwardedMessages = append(ForwardedMessages, stamp)
                         if len(ForwardedMessages) > 100 {
                             ForwardedMessages = ForwardedMessages[len(ForwardedMessages)-100:]
                         }
-                        RouterWaitRoom = RouterWaitRoom[1:]
+                        delete(RouterWaitRoom, stamp)
                     }
                 }
             } else if opType == "ROUTE" {
                 log.Info("Attending router ROUTE")
                 packet := Packet{}
                 json.Unmarshal([]byte(predicate), &packet)
-                RouterWaitRoom = append(RouterWaitRoom, packet)
+                RouterWaitRoom[packet.Timestamp] = packet
                 SendHello(packet)
             }
 
