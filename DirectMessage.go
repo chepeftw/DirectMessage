@@ -327,7 +327,7 @@ func sendAwesomeMessage() {
                 Source: myIP,
                 Destination: net.ParseIP("10.12.0.25"),
                 Gateway: myIP,
-                Timestamp: strings.Replace(myIP.String(), ".", "", -1) + "_" + string(time.Now().UnixNano()),
+                Timestamp: strings.Replace(myIP.String(), ".", "", -1) + "_" + strconv.FormatInt(time.Now().UTC().UnixNano(), 10),
             }
 
             log.Info("Payload.Timestamp: " + payload.Timestamp)
