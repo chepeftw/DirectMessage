@@ -368,8 +368,8 @@ func main() {
     go attendBufferChannel()
     go attendRouterChannel()
     go attendOutputChannel()
-    go beacon()
-    go parseRoutes()
+    // go beacon()
+    // go parseRoutes()
     go sendAwesomeMessage()
 
     buf := make([]byte, 1024)
