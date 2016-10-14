@@ -118,7 +118,7 @@ func attendBufferChannel() {
             if packet.Type == HELLO {
                 if myIP.String() != packet.Source.String() {
                     if contains(ForwardedMessages, packet.Timestamp) {
-                        time.Sleep(time.Duration(r1.Intn(25000)/100) * time.Millisecond)   
+                        time.Sleep(time.Duration(r1.Intn(20000)/100) * time.Millisecond)   
                     }
                     SendHelloReply(packet)
                 }
@@ -324,7 +324,7 @@ func sendAwesomeMessage() {
         i := 0
         for {
             log.Info("Waiting to SEND Awesome message to 10.12.0.1")
-            time.Sleep(time.Second * 10)
+            time.Sleep(time.Second * 5)
             i = i + 1
             log.Info("Sending Awesome message to 10.12.0.1")
             payload := Packet{
