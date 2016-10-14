@@ -173,7 +173,7 @@ func SendHelloReply(packet Packet) {
 func SendRoute(gateway net.IP, packet Packet) {
     payload := Packet{
         Type: ROUTE,
-        Message: packet.Message + myIP.String() + " ",
+        Message: packet.Message,
         Source: packet.Source,
         Destination: packet.Destination,
         Gateway: gateway,
@@ -317,15 +317,15 @@ func parseRoutes() {
 }
 
 func sendAwesomeMessage() {
-    if "10.12.0.1" == myIP.String() {
+    if "10.12.0.25" == myIP.String() {
         // for {
-            log.Info("Sending Awesome message to 10.12.0.25")
+            log.Info("Sending Awesome message to 10.12.0.1")
             time.Sleep(time.Second * 25)
             payload := Packet{
                 Type: ROUTE,
                 Message: "ROUTING! ",
                 Source: myIP,
-                Destination: net.ParseIP("10.12.0.25"),
+                Destination: net.ParseIP("10.12.0.1"),
                 Gateway: myIP,
                 Timestamp: strings.Replace(myIP.String(), ".", "", -1) + "_" + strconv.FormatInt(time.Now().UTC().UnixNano(), 10),
             }
