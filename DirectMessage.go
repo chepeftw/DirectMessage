@@ -34,10 +34,20 @@ const (
     BroadcastAddr     = "255.255.255.255"
 )
 
+const (
+    NONE = iota
+    HELLO
+    HELLO_REPLY
+    ROUTE
+)
+
 // +++++++++ Global vars
 var myIP net.IP = net.ParseIP("127.0.0.1")
 
 var routes map[string]string = make(map[string]string)
+var globalTimestamp = 0
+var HelloReplyList []net.IP = []net.IP{}
+var RouterWaitRoom []Packet = []Packet{}
 
 // +++++++++ Channels
 var buffer = make(chan string)
@@ -48,10 +58,11 @@ var done = make(chan bool)
 // +++++++++ Packet structure
 type Packet struct {
     Type         int        `json:"type,omitempty"`
-    Message      string     `json:"message"`
+    Message      string     `json:"message,omitempty"`
     Source       net.IP     `json:"source,omitempty"`
     Destination  net.IP     `json:"destination,omitempty"`
     Gateway      net.IP     `json:"gateway,omitempty"`
+    Timestamp    int        `json:"timestamp,omitempty"`
 }
 
  
@@ -86,16 +97,20 @@ func attendBufferChannel() {
     for {
         j, more := <-buffer
         if more {
-            // s := strings.Split(j, "|")
-            // _, jsonStr := s[0], s[1]
-
             // First we take the json, unmarshal it to an object
             packet := Packet{}
             json.Unmarshal([]byte(j), &packet)
 
-            log.Info(myIP.String() + " -> Message: " + packet.Message + " From " + packet.Source.String())
-
-            if packet.Type == 50 {
+            if packet.Type == HELLO {
+                if myIP.String() != packet.Source.String() {
+                    SendHelloReply(packet)
+                }
+            } else if packet.Type == HELLO_REPLY {
+                if myIP.String() == packet.Destination.String() {
+                    log.Info(myIP.String() + " HEELO_REPLY from " + packet.Source.String())                        
+                    router <- "ADD|" + packet.Source.String()
+                }
+            } else if packet.Type == ROUTE {
                 if myIP.String() == packet.Gateway.String() {
                     if myIP.String() == packet.Destination.String() {
                         log.Info(myIP.String() + " SUCCESS ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
@@ -105,12 +120,60 @@ func attendBufferChannel() {
                     }
                 }
             }
+
+            log.Info(myIP.String() + " -> Message: " + packet.Message + " From " + packet.Source.String())
         } else {
             fmt.Println("closing channel")
             done <- true
             return
         }
     }
+}
+
+func SendHello() {
+    s1 := rand.NewSource(time.Now().UnixNano())
+    r1 := rand.New(s1)
+    globalTimestamp = strconv.Itoa(r1.Intn(100000))
+
+    payload := Packet{
+        Type: HELLO,
+        Source: myIP,
+        Timestamp: globalTimestamp,
+    }
+
+    js, err := json.Marshal(payload)
+    CheckError(err)
+
+    output <- string(js)
+}
+
+func SendHelloReply(packet Packet) {
+    payload := Packet{
+        Type: HELLO_REPLY,
+        Source: myIP,
+        Destination: packet.Source,
+        Timestamp: packet.Timestamp,
+    }
+
+    js, err := json.Marshal(payload)
+    CheckError(err)
+
+    output <- string(js)
+}
+
+func SendRoute(gateway net.IP, packet Packet) {
+    payload := Packet{
+        Type: ROUTE,
+        Message: packet.Message + myIP.String() + " ",
+        Source: packet.Source,
+        Destination: packet.Destination,
+        Gateway: gateway,
+    }
+
+    js, err := json.Marshal(payload)
+    CheckError(err)
+
+    output <- string(js)
 }
 
 // Function that handles the router channel
@@ -122,24 +185,26 @@ func attendRouterChannel() {
             opType, predicate := s[0], s[1]
 
             if opType == "ADD" {
-                arr := strings.Split(predicate, " ")
-                routes[arr[0]] = arr[1]
+                HelloReplyList = append(HelloReplyList, net.ParseIP(predicate))
+
+                if len(HelloReplyList) >= 2 {
+                    s1 := rand.NewSource(time.Now().UnixNano())
+                    r1 := rand.New(s1)
+                    if r1.Intn(100000)%2 == 0 {
+                        gossipCandidate := HelloReplyList[0]
+                    } else {
+                        gossipCandidate := HelloReplyList[1]
+                    }
+
+                    SendRoute(gossipCandidate, RouterWaitRoom[0])
+                    RouterWaitRoom = RouterWaitRoom[1:]
+                    HelloReplyList = []net.IP{}
+                }
             } else if opType == "ROUTE" {
                 packet := Packet{}
                 json.Unmarshal([]byte(predicate), &packet)
-
-                payload := Packet{
-                    Type: 50,
-                    Message: packet.Message + myIP.String() + " ",
-                    Source: packet.Source,
-                    Destination: packet.Destination,
-                    Gateway: net.ParseIP(routes[packet.Destination.String()]),
-                }
-
-                js, err := json.Marshal(payload)
-                CheckError(err)
-
-                output <- string(js)
+                RouterWaitRoom = append(RouterWaitRoom, packet)
+                SendHello()
             }
 
         } else {
@@ -182,7 +247,7 @@ func beacon() {
     t := strconv.Itoa(r1.Intn(100000))
 
     payload := Packet{
-        Type: 0,
+        Type: NONE,
         Message: "Hello network! "+t,
         Source: myIP,
     }
