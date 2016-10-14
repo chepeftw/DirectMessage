@@ -324,7 +324,7 @@ func sendAwesomeMessage() {
         i := 0
         for {
             log.Info("Waiting to SEND Awesome message to 10.12.0.1")
-            time.Sleep(time.Second * 5)
+            time.Sleep(time.Second * 7)
             i = i + 1
             log.Info("Sending Awesome message to 10.12.0.1")
             payload := Packet{
