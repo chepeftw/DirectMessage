@@ -131,7 +131,7 @@ func attendBufferChannel() {
                 if myIP.String() == packet.Gateway.String() {
                     if myIP.String() == packet.Destination.String() {
                         i = i + 1
-                        log.Info(myIP.String() + " SUCCESS ROUTE -> Timestamp: " + packet.Timestamp + " Message: " + packet.Message + " from " + packet.Source.String() + " => " + string(i))                        
+                        log.Info(myIP.String() + " SUCCESS ROUTE -> Timestamp: " + packet.Timestamp + " Message: " + packet.Message + " from " + packet.Source.String() + " => " + strconv.Itoa(i))                        
                     } else {
                         log.Info(myIP.String() + " ++++++++++++++++ ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
                         router <- "ROUTE|" + j
@@ -336,7 +336,7 @@ func sendAwesomeMessage() {
                 Timestamp: strings.Replace(myIP.String(), ".", "", -1) + "_" + strconv.FormatInt(time.Now().UTC().UnixNano(), 10),
             }
 
-            log.Info("Payload.Timestamp: " + payload.Timestamp + " => " + string(i))
+            log.Info("Payload.Timestamp: " + payload.Timestamp + " => " + strconv.Itoa(i))
 
             js, err := json.Marshal(payload)
             CheckError(err)
