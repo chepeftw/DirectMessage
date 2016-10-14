@@ -103,6 +103,9 @@ func contains(s []string, e string) bool {
 
 // Function that handles the buffer channel
 func attendBufferChannel() {
+    s1 := rand.NewSource(time.Now().UnixNano())
+    r1 := rand.New(s1)
+
     for {
         j, more := <-buffer
         if more {
@@ -112,9 +115,10 @@ func attendBufferChannel() {
 
             if packet.Type == HELLO {
                 if myIP.String() != packet.Source.String() {
-                    if !contains(ForwardedMessages, packet.Timestamp) {
-                        SendHelloReply(packet)
+                    if contains(ForwardedMessages, packet.Timestamp) {
+                        time.Sleep(time.Duration(500 + r1.Intn(500)) * time.Millisecond)   
                     }
+                    SendHelloReply(packet)
                 }
             } else if packet.Type == HELLO_REPLY {
                 if myIP.String() == packet.Destination.String() {
