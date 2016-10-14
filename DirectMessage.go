@@ -124,7 +124,7 @@ func attendBufferChannel() {
             } else if packet.Type == ROUTE {
                 if myIP.String() == packet.Gateway.String() {
                     if myIP.String() == packet.Destination.String() {
-                        log.Info(myIP.String() + " SUCCESS ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
+                        log.Info(myIP.String() + " SUCCESS ROUTE -> Timestamp: " + packet.Timestamp + " Message: " + packet.Message + " from " + packet.Source.String())                        
                     } else {
                         log.Info(myIP.String() + " ++++++++++++++++ ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
                         router <- "ROUTE|" + j
@@ -324,7 +324,7 @@ func sendAwesomeMessage() {
             log.Info("Sending Awesome message to 10.12.0.1")
             payload := Packet{
                 Type: ROUTE,
-                Message: "ROUTING! ",
+                Message: "ROUTING!",
                 Source: myIP,
                 Destination: net.ParseIP("10.12.0.1"),
                 Gateway: myIP,
