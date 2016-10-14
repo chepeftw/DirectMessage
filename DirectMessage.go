@@ -200,8 +200,12 @@ func attendRouterChannel() {
 
                 relaySelection := net.ParseIP(dest)
 
+                log.Info("Dealing with the relay selection")
+
                 if len(RouterWaitRoom) > 0 {
+                    log.Info("len(RouterWaitRoom) > 0")
                     if RouterWaitRoom[0].Timestamp == stamp {
+                        log.Info("RouterWaitRoom[0].Timestamp == stamp")
                         SendRoute(relaySelection, RouterWaitRoom[0])
                         ForwardedMessages = append(ForwardedMessages, stamp)
                         if len(ForwardedMessages) > 100 {
@@ -316,7 +320,7 @@ func sendAwesomeMessage() {
     if "10.12.0.1" == myIP.String() {
         for {
             log.Info("Sending Awesome message to 10.12.0.25")
-            time.Sleep(time.Second * 16)
+            time.Sleep(time.Second * 25)
             payload := Packet{
                 Type: ROUTE,
                 Message: "ROUTING! ",
@@ -325,6 +329,8 @@ func sendAwesomeMessage() {
                 Gateway: myIP,
                 Timestamp: strings.Replace(myIP.String(), ".", "", -1) + "_" + string(time.Now().UnixNano()),
             }
+
+            log.Info("Payload.Timestamp: " + payload.Timestamp)
 
             js, err := json.Marshal(payload)
             CheckError(err)
