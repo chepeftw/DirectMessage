@@ -200,12 +200,8 @@ func attendRouterChannel() {
 
                 relaySelection := net.ParseIP(dest)
 
-                log.Info("Dealing with the relay selection")
-
                 if len(RouterWaitRoom) > 0 {
-                    log.Info("len(RouterWaitRoom) > 0")
                     if RouterWaitRoom[0].Timestamp == stamp {
-                        log.Info("RouterWaitRoom[0].Timestamp == stamp")
                         SendRoute(relaySelection, RouterWaitRoom[0])
                         ForwardedMessages = append(ForwardedMessages, stamp)
                         if len(ForwardedMessages) > 100 {
