@@ -234,7 +234,7 @@ func attendRouterChannel() {
         }
 
         if i == 3 {
-            log.Info("+++++++++ Total items in RouterWaitRoom = " + len(RouterWaitRoom))
+            log.Info("+++++++++ Total items in RouterWaitRoom = " + strconv.Itoa(len(RouterWaitRoom)))
         }
     }
 }
