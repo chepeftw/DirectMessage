@@ -195,7 +195,9 @@ func SendRoute(gateway net.IP, packet Packet) {
 
 // Function that handles the router channel
 func attendRouterChannel() {
+    i := 0
     for {
+        i++
         j, more := <-router
         if more {
             s := strings.Split(j, "|")
@@ -229,6 +231,10 @@ func attendRouterChannel() {
             fmt.Println("closing channel")
             done <- true
             return
+        }
+
+        if i == 3 {
+            log.Info("+++++++++ Total items in RouterWaitRoom = " + len(RouterWaitRoom))
         }
     }
 }
