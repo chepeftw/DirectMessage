@@ -58,12 +58,14 @@ var done = make(chan bool)
 
 // +++++++++ Packet structure
 type Packet struct {
-    Type         int        `json:"type,omitempty"`
-    Message      string     `json:"message,omitempty"`
-    Source       net.IP     `json:"source,omitempty"`
-    Destination  net.IP     `json:"destination,omitempty"`
-    Gateway      net.IP     `json:"gateway,omitempty"`
-    Timestamp    string     `json:"timestamp,omitempty"`
+    Type         int        `json:"typ,omitempty"`
+    Message      string     `json:"msg,omitempty"`
+    Source       net.IP     `json:"src,omitempty"`
+    Destination  net.IP     `json:"dst,omitempty"`
+    Gateway      net.IP     `json:"gw,omitempty"`
+    Timestamp    string     `json:"ts,omitempty"`
+    TimeToLive   int        `json:"ttl"`
+    Hops   int        `json:"hps"`
 }
 
  
@@ -131,7 +133,7 @@ func attendBufferChannel() {
                 if myIP.String() == packet.Gateway.String() {
                     if myIP.String() == packet.Destination.String() {
                         i = i + 1
-                        log.Info(myIP.String() + " SUCCESS ROUTE -> Timestamp: " + packet.Timestamp + " Message: " + packet.Message + " from " + packet.Source.String() + " => " + strconv.Itoa(i))                        
+                        log.Info(myIP.String() + " SUCCESS ROUTE -> Timestamp: " + packet.Timestamp + " Message: " + packet.Message + " from " + packet.Source.String() + " after " + strconv.Itoa(packet.Hops) + "hops => " + strconv.Itoa(i))
                     } else {
                         log.Info(myIP.String() + " ++++++++++++++++ ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
                         router <- "ROUTE|" + j
@@ -185,6 +187,8 @@ func SendRoute(gateway net.IP, packet Packet) {
         Destination: packet.Destination,
         Gateway: gateway,
         Timestamp: packet.Timestamp,
+        TimeToLive: packet.TimeToLive-1,
+        Hops: packet.Hops+1,
     }
 
     js, err := json.Marshal(payload)
@@ -340,6 +344,8 @@ func sendAwesomeMessage() {
                 Destination: net.ParseIP("10.12.0.1"),
                 Gateway: myIP,
                 Timestamp: strings.Replace(myIP.String(), ".", "", -1) + "_" + strconv.FormatInt(time.Now().UTC().UnixNano(), 10),
+                TimeToLive: 200,
+                Hops: 0,
             }
 
             log.Info("Payload.Timestamp: " + payload.Timestamp + " => " + strconv.Itoa(i))
