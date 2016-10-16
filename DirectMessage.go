@@ -144,6 +144,7 @@ func attendBufferChannel() {
                     if myIP.String() == packet.Destination.String() {
                         i = i + 1
                         log.Info(myIP.String() + " SUCCESS ROUTE -> Timestamp: " + packet.Timestamp + " Message: " + packet.Message + " from " + packet.Source.String() + " after " + strconv.Itoa(packet.Hops) + " hops => " + strconv.Itoa(i))
+                        log.Info(myIP.String() + " SUCRO HOPS=" + strconv.Itoa(packet.Hops))
                     } else {
                         if packet.TimeToLive > 0 {
                             log.Info(myIP.String() + " ++++++++++++++++ ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
@@ -384,7 +385,7 @@ func sendAwesomeMessage() {
 func main() {
     fmt.Printf("Hello World!")
 
-    mode = GOSSIP_FLOODING
+    mode = GOSSIP_CLASSIC
 
     // +++++++++++++++++++++++++++++
     // ++++++++ Logger conf
