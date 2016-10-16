@@ -39,13 +39,16 @@ const (
     HELLO
     HELLO_REPLY
     ROUTE
+
+    GOSSIP_CLASSIC
+    GOSSIP_FLOODING
 )
 
 // +++++++++ Global vars
 var myIP net.IP = net.ParseIP("127.0.0.1")
 
 var routes map[string]string = make(map[string]string)
-var globalTimestamp = 0
+var mode = GOSSIP_CLASSIC
 // var RouterWaitRoom []Packet = []Packet{}
 var RouterWaitRoom map[string]Packet = make(map[string]Packet)
 var ForwardedMessages []string = []string{}
@@ -119,10 +122,16 @@ func attendBufferChannel() {
 
             if packet.Type == HELLO {
                 if myIP.String() != packet.Source.String() {
-                    if contains(ForwardedMessages, packet.Timestamp) {
-                        time.Sleep(time.Duration(r1.Intn(20000)/100) * time.Millisecond)   
+                    if mode == GOSSIP_CLASSIC {
+                        if contains(ForwardedMessages, packet.Timestamp) {
+                            time.Sleep(time.Duration(r1.Intn(20000)/100) * time.Millisecond)   
+                        }
+                        SendHelloReply(packet)
+                    } else if mode == GOSSIP_FLOODING {
+                        if !contains(ForwardedMessages, packet.Timestamp) {
+                            SendHelloReply(packet)
+                        }
                     }
-                    SendHelloReply(packet)
                 }
             } else if packet.Type == HELLO_REPLY {
                 if myIP.String() == packet.Destination.String() {
@@ -220,7 +229,9 @@ func attendRouterChannel() {
                         if len(ForwardedMessages) > 100 {
                             ForwardedMessages = ForwardedMessages[len(ForwardedMessages)-100:]
                         }
-                        delete(RouterWaitRoom, stamp)
+                        if mode == GOSSIP_CLASSIC {
+                            delete(RouterWaitRoom, stamp)
+                        }
                     }
                 }
             } else if opType == "ROUTE" {
@@ -344,7 +355,7 @@ func sendAwesomeMessage() {
                 Destination: net.ParseIP("10.12.0.1"),
                 Gateway: myIP,
                 Timestamp: strings.Replace(myIP.String(), ".", "", -1) + "_" + strconv.FormatInt(time.Now().UTC().UnixNano(), 10),
-                TimeToLive: 200,
+                TimeToLive: 50,
                 Hops: 0,
             }
 
@@ -361,6 +372,8 @@ func sendAwesomeMessage() {
  
 func main() {
     fmt.Printf("Hello World!")
+
+    mode = GOSSIP_FLOODING
 
     // +++++++++++++++++++++++++++++
     // ++++++++ Logger conf
