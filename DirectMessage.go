@@ -124,7 +124,7 @@ func attendBufferChannel() {
                 if myIP.String() != packet.Source.String() {
                     if mode == GOSSIP_CLASSIC {
                         if contains(ForwardedMessages, packet.Timestamp) {
-                            time.Sleep(time.Duration(r1.Intn(20000)/100) * time.Millisecond)   
+                            time.Sleep(time.Duration((r1.Intn(19000)+1000)/100) * time.Millisecond)
                         }
                         SendHelloReply(packet)
                     } else if mode == GOSSIP_FLOODING {
