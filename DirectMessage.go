@@ -133,7 +133,7 @@ func attendBufferChannel() {
                 if myIP.String() == packet.Gateway.String() {
                     if myIP.String() == packet.Destination.String() {
                         i = i + 1
-                        log.Info(myIP.String() + " SUCCESS ROUTE -> Timestamp: " + packet.Timestamp + " Message: " + packet.Message + " from " + packet.Source.String() + " after " + strconv.Itoa(packet.Hops) + "hops => " + strconv.Itoa(i))
+                        log.Info(myIP.String() + " SUCCESS ROUTE -> Timestamp: " + packet.Timestamp + " Message: " + packet.Message + " from " + packet.Source.String() + " after " + strconv.Itoa(packet.Hops) + " hops => " + strconv.Itoa(i))
                     } else {
                         log.Info(myIP.String() + " ++++++++++++++++ ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
                         router <- "ROUTE|" + j
