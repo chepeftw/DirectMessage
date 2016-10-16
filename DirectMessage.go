@@ -235,7 +235,7 @@ func attendRouterChannel() {
                             }
                             delete(RouterWaitRoom, stamp)
                         } else if mode == GOSSIP_FLOODING {
-                            if !contains(ForwardedMessages, packet.Timestamp) {
+                            if !contains(ForwardedMessages, stamp) {
                                 SendRoute(relaySelection, RouterWaitRoom[stamp])
                                 ForwardedMessages = append(ForwardedMessages, stamp)
                                 if len(ForwardedMessages) > 100 {
