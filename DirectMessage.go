@@ -140,12 +140,15 @@ func attendBufferChannel() {
                 }
             } else if packet.Type == ROUTE {
                 if myIP.String() == packet.Gateway.String() {
+
                     if myIP.String() == packet.Destination.String() {
                         i = i + 1
                         log.Info(myIP.String() + " SUCCESS ROUTE -> Timestamp: " + packet.Timestamp + " Message: " + packet.Message + " from " + packet.Source.String() + " after " + strconv.Itoa(packet.Hops) + " hops => " + strconv.Itoa(i))
                     } else {
-                        log.Info(myIP.String() + " ++++++++++++++++ ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
-                        router <- "ROUTE|" + j
+                        if packet.TimeToLive > 0 {
+                            log.Info(myIP.String() + " ++++++++++++++++ ROUTE -> Message: " + packet.Message + " from " + packet.Source.String())                        
+                            router <- "ROUTE|" + j
+                        }
                     }
                 }
             }
@@ -224,13 +227,21 @@ func attendRouterChannel() {
 
                 if len(RouterWaitRoom) > 0 {
                     if _, ok := RouterWaitRoom[stamp]; ok {
-                        SendRoute(relaySelection, RouterWaitRoom[stamp])
-                        ForwardedMessages = append(ForwardedMessages, stamp)
-                        if len(ForwardedMessages) > 100 {
-                            ForwardedMessages = ForwardedMessages[len(ForwardedMessages)-100:]
-                        }
                         if mode == GOSSIP_CLASSIC {
+                            SendRoute(relaySelection, RouterWaitRoom[stamp])
+                            ForwardedMessages = append(ForwardedMessages, stamp)
+                            if len(ForwardedMessages) > 100 {
+                                ForwardedMessages = ForwardedMessages[len(ForwardedMessages)-100:]
+                            }
                             delete(RouterWaitRoom, stamp)
+                        } else if mode == GOSSIP_FLOODING {
+                            if !contains(ForwardedMessages, packet.Timestamp) {
+                                SendRoute(relaySelection, RouterWaitRoom[stamp])
+                                ForwardedMessages = append(ForwardedMessages, stamp)
+                                if len(ForwardedMessages) > 100 {
+                                    ForwardedMessages = ForwardedMessages[len(ForwardedMessages)-100:]
+                                }
+                            }
                         }
                     }
                 }
